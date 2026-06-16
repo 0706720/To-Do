@@ -22,10 +22,6 @@ let listItems = [
     //}
 ];
 
-let doneItems = [
-    
-];
-
 let state = [ {
     currentIndex: 0,
     }
@@ -54,13 +50,12 @@ function startUp()
 
 function printArr()
 {
-    document.getElementById('print1').innerHTML = JSON.stringify(listItems) + " Done array next: " + JSON.stringify(doneItems);
+    document.getElementById('print1').innerHTML = JSON.stringify(listItems);
 }
 
 function saveData()
 {
     localStorage.setItem('listItems', JSON.stringify(listItems));
-    localStorage.setItem('doneItems', JSON.stringify(doneItems));
     localStorage.setItem('state', JSON.stringify(state));
 }
 
@@ -69,9 +64,6 @@ function importData()
     if (localStorage.getItem('listItems')) {
        listItems = JSON.parse(localStorage.getItem('listItems'));
        importOngoing(listItems); }
-    if (localStorage.getItem('doneItems')) {
-       doneItems = JSON.parse(localStorage.getItem('doneItems'));
-       importDone(doneItems); }
     if (localStorage.getItem('state')) {
        state = JSON.parse(localStorage.getItem('state')); }
 }
@@ -169,6 +161,7 @@ function pushObject(newTask, priority, date)
         Priority: priority,
         Due: date, 
         ID: currentIndex,
+        done: false,
     };
     //state[0].currentIndex++;
     listItems.push(taskInfo);
@@ -218,6 +211,10 @@ function createTask(textInfo, priority, date)
     //document.getElementById('print3').innerHTML = taskInstance.id;
     state[0].currentIndex++;
     saveData();
+    let elementIndex = listItems.findIndex(index => index.ID === localcount);
+    elementIndex.classes = toString(taskInstance.onclick);
+    document.getElementById('print5').innerHTML = toString(taskInstance.classList);
+
 }
 
 function importOngoing(array)
@@ -331,6 +328,12 @@ function deleteTask(param)
 
 function moveTask(param)
 {
+    let elementIndex = listItems.findIndex(index => index.ID === Number(param));
+    elementIndex.done = true;
+    // create a temp array for one item, because the function call for 'sortDone' requires a array parameter input.
+    let arrayInstance = [elementIndex];
+    sortDone(arrayInstance);
+    /*
     // cut from listItems array
     let elementIndex = listItems.findIndex(index => index.ID === Number(param));
     let element = listItems.splice(elementIndex, 1)[0];
@@ -358,19 +361,39 @@ function moveTask(param)
     document.getElementById('div3').appendChild(movedElement);
 
     // save to localstorage
-    saveData();
+    saveData();*/
+}
+
+function sortDone(array) 
+{
+    for (let i = 0; i < array.length; i++) {
+        
+        // fuck with classlists
+        let param = listItems[i].ID;
+        let movedElement = document.getElementById("task" + param);
+        movedElement.classList.remove('textBorder');
+        movedElement.classList.add('doneBorder');
+
+        // access child checkbox
+        var checkBox = document.getElementById('move' + param);
+     
+        checkBox.onclick = null;
+        checkBox.onclick = function() {
+            reinstateTask(param);
+        };
+
+        // append element to new parent
+        document.getElementById('div3').appendChild(movedElement);
+
+        // save to localstorage
+        saveData();
+    }
 }
 
 function reinstateTask(param)
 {
-    
-    let elementIndex = doneItems.findIndex(item => item.ID === Number(param));
-    
-    //if (elementIndex === -1) return;
-
-    let element = doneItems.splice(elementIndex, 1)[0];
-    document.getElementById('print4').innerHTML = 'this ran';
-    listItems.push(element);
+    let elementIndex = listItems.findIndex(item => item.ID === Number(param));
+    elementIndex.done = false;
 
     let movedElement = document.getElementById("task" + param);
     movedElement.classList.remove('doneBorder');
@@ -379,10 +402,7 @@ function reinstateTask(param)
     let checkBox = document.getElementById('move' + param);
     checkBox.onclick = () => moveTask(param);
 
-    let priorityIndex = listItems.findIndex(item => item.ID === param);
-    if (priorityIndex === -1) return;
-
-    let priority = listItems[priorityIndex].Priority;
+    let priority = listItems[elementIndex].Priority;
     let parentLocation = orderPriority(priority);
 
     parentLocation.appendChild(movedElement);
